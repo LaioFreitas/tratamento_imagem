@@ -18,7 +18,7 @@ int main() {
   }
   std::cout << "rows: " << image.rows << "\n"
             << "colluns: " << image.cols << std::endl;
-  //
+  // pixel a pixel
   // for (int i = 0; i < image.rows; i++) {
   //   uchar *pixel = image.ptr<uchar>(i);
   //   for (int j = 0; j < image.cols; j++) {
