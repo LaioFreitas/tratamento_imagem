@@ -7,10 +7,17 @@
 
 class ProcessadorImagem {
 private:
-  cv::Mat image;
+  cv::Mat image_proc;
   std::string image_path;
 
+  float lastGamma;
+  std::vector<uchar> LUTGammaCorrection;
+
+  uchar lastBrightness;
+  std::vector<uchar> LUTBrightness;
+
 public:
+  cv::Mat image;
   ProcessadorImagem();
   explicit ProcessadorImagem(const std::string &path);
   ~ProcessadorImagem();
@@ -20,9 +27,16 @@ public:
   bool showImage(const std::string &window_name) const;
 
   void negative();
+  void gammaCorrection(float gamma);
+  void thresHolding(uchar threshold);
+  void brightnessAdj(uchar brightness);
+  void simpleScale(int sx, int sy);
+  void scale(int sx, int sy);
+  void rotation(int angle);
   // TODO: definir os outros metodos necessarios
 
   bool isEmpty() const;
+  cv::Mat getImage() const;
 };
 
 #endif

@@ -1,8 +1,15 @@
+#include <cmath>
 #include <iostream>
+#include <opencv2/core.hpp>
+#include <opencv2/core/hal/interface.h>
+#include <opencv2/core/types.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <processadorImagem.hpp>
 
-ProcessadorImagem::ProcessadorImagem() : image_path("") {}
+ProcessadorImagem::ProcessadorImagem()
+    : image_path(""), LUTBrightness(256), LUTGammaCorrection(256),
+      image(800, 600, CV_8UC1, cv::Scalar(0)),
+      image_proc(800, 600, CV_8UC1, cv::Scalar(0)) {}
 
 ProcessadorImagem::ProcessadorImagem(const std::string &path) {
   loadImage(path);
@@ -26,12 +33,14 @@ bool ProcessadorImagem::saveImage(const std::string &target_path) const {
     std::cout << "ERROR: nao foi possivel salvar" << std::endl;
     return false;
   }
-  return cv::imwrite(target_path, image);
+  return cv::imwrite(target_path, image_proc);
 }
 
-bool ProcessadorImagem::isEmpty() const { return image.empty(); }
-
 void ProcessadorImagem::negative() {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
   // pixel a pixel
   // for (int i = 0; i < image.rows; i++) {
   //   uchar *pixel = image.ptr<uchar>(i);
@@ -41,5 +50,181 @@ void ProcessadorImagem::negative() {
   // }
   cv::Mat image_neg;
   cv::bitwise_not(image, image_neg);
-  image = image_neg;
+  image_proc = image_neg;
 }
+
+void ProcessadorImagem::gammaCorrection(float gamma) {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
+  // lookup table
+  if (lastGamma != gamma) {
+    for (int i = 0; i < 256; i++) {
+      float result = std::pow(i / 255, gamma) * 255;
+      if (result > 255)
+        result = 255;
+      if (result < 0)
+        result = 0;
+      LUTGammaCorrection[i] = result;
+    }
+  }
+  for (int y = 0; y < image.rows; y++) {
+    uchar *pixel = image.ptr<uchar>(y);
+    uchar *pixel_proc = image_proc.ptr<uchar>(y);
+    for (int x = 0; x < image.cols; y++) {
+      uchar valor_pixel = pixel[x];
+      pixel_proc[x] = LUTGammaCorrection[valor_pixel];
+    }
+  }
+}
+
+void ProcessadorImagem::thresHolding(uchar threshold) {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
+
+  for (int y = 0; y < image.rows; y++) {
+    uchar *pixel = image.ptr<uchar>(y);
+    uchar *pixel_proc = image_proc.ptr<uchar>(y);
+    for (int x = 0; x < image.cols; y++) {
+      (pixel[x] > threshold) ? pixel_proc[x] = 255 : pixel_proc[x] = 0;
+    }
+  }
+}
+
+void ProcessadorImagem::brightnessAdj(uchar brightness) {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
+
+  if (brightness != lastBrightness) {
+    lastBrightness = brightness;
+    for (int i = 0; i < 256; i++) {
+      int result = i + brightness;
+      if (brightness > 255)
+        result = 250;
+      else if (brightness < 0)
+        result = 0;
+
+      LUTBrightness[i] = static_cast<uchar>(result);
+    }
+
+    for (int y = 0; y < image.rows; y++) {
+      uchar *pixel = image.ptr<uchar>(y);
+      uchar *pixel_proc = image_proc.ptr<uchar>(y);
+      for (int x = 0; x < image.cols; x++) {
+        uchar pixel_value = pixel[x];
+        pixel_proc[x] = LUTBrightness[pixel[x]];
+      }
+    }
+  }
+}
+
+void ProcessadorImagem::simpleScale(int sx, int sy) {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
+  image_proc = cv::Mat::zeros(sy * image.rows, sx * image.cols, CV_8UC1);
+
+  for (int y = 0; y < image_proc.rows; y++) {
+    uchar *pixel_proc = image_proc.ptr<uchar>(y);
+    uchar *pixel = image.ptr<uchar>(y / sy);
+    for (int x = 0; x < image_proc.cols; x++) {
+      pixel_proc[x] = pixel[x / sx];
+    }
+  }
+}
+
+void ProcessadorImagem::scale(int sx, int sy) {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
+  image_proc = cv::Mat::zeros(sy * image.rows, sx * image.cols, CV_8UC1);
+
+  for (int i = 0; i < image_proc.rows; i++) {
+    uchar *pixel_proc = image_proc.ptr<uchar>(i);
+    for (int j = 0; j < image_proc.cols; j++) {
+      float y = i / static_cast<float>(sy);
+      float x = j / static_cast<float>(sx);
+
+      int yp = static_cast<int>(y);
+      int xp = static_cast<int>(x);
+
+      float py = y - yp;
+      float px = x - xp;
+
+      float color1 = (1 - py) * image.ptr<uchar>(yp)[xp] +
+                     py * image.ptr<uchar>(yp + 1)[xp];
+      float color2 = (1 - py) * image.ptr<uchar>(yp)[xp + 1] +
+                     py * image.ptr<uchar>(yp + 1)[xp + 1];
+
+      float colorFinal = (1 - px) * color1 + px * color2;
+      pixel_proc[j] = static_cast<uchar>(colorFinal);
+    }
+  }
+}
+
+void ProcessadorImagem::rotation(int angle) {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
+
+  float ang = angle * M_PI / 180;
+
+  cv::Mat pointsMat = cv::Mat(4, 2, CV_32FC1);
+  pointsMat.at<float>(0, 0) = 0.0f;
+  pointsMat.at<float>(0, 1) = 0.0f;
+  pointsMat.at<float>(1, 0) = 0.0f;
+  pointsMat.at<float>(1, 1) = (float)image.cols;
+  pointsMat.at<float>(2, 0) = (float)image.rows;
+  pointsMat.at<float>(2, 1) = 0.0f;
+  pointsMat.at<float>(3, 0) = (float)image.rows;
+  pointsMat.at<float>(3, 1) = (float)image.cols;
+
+  cv::Mat rotationMatrix = cv::Mat(2, 2, CV_32FC1);
+  rotationMatrix.at<float>(0, 0) = cos(ang);
+  rotationMatrix.at<float>(0, 1) = -sin(ang);
+  rotationMatrix.at<float>(1, 0) = sin(ang);
+  rotationMatrix.at<float>(1, 1) = cos(ang);
+
+  cv::Mat pointsRotated = pointsMat * rotationMatrix;
+
+  for (int i = 0; i < pointsRotated.rows; i++) {
+    for (int j = 0; j < pointsRotated.cols; j++) {
+      std::cout << pointsRotated.at<float>(i, j) << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  double xmax, xmin, ymax, ymin;
+  cv::minMaxLoc(pointsRotated.col(1), &xmin, &xmax);
+  cv::minMaxLoc(pointsRotated.col(0), &ymin, &ymax);
+
+  image_proc = cv::Mat(static_cast<int>(std::round(ymax - ymin)),
+                       static_cast<int>(std::round(xmax - xmin)), CV_8UC1,
+                       cv::Scalar(0));
+
+  for (int i = 0; i < image_proc.rows; i++) {
+    uchar *pixel_proc = image_proc.ptr<uchar>(i);
+    for (int j = 0; j < image_proc.cols; j++) {
+      float x = (j + xmin) * cos(-ang) - (i + ymin) * sin(-ang);
+      float y = (j + xmin) * sin(-ang) + (i + ymin) * cos(-ang);
+      int xaux = static_cast<int>(x);
+      int yaux = static_cast<int>(y);
+      if (xaux >= 0 && yaux >= 0 && xaux < image.cols && yaux < image.rows) {
+        pixel_proc[j] = image.ptr<uchar>(yaux)[xaux];
+      } else {
+        pixel_proc[j] = 0;
+      }
+    }
+  }
+}
+
+cv::Mat ProcessadorImagem::getImage() const { return image_proc; }
+bool ProcessadorImagem::isEmpty() const { return image.empty(); }

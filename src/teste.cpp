@@ -1,47 +1,36 @@
-#include <iostream>
-#include <opencv2/core.hpp>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/core/types.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/opencv.hpp>
+// #include <opencv2/core.hpp>
+// #include <opencv2/core/mat.hpp>
+// #include <opencv2/core/types.hpp>
+// #include <opencv2/highgui.hpp>
+// #include <opencv2/imgcodecs.hpp>
+// #include <opencv2/opencv.hpp>
+#include <processadorImagem.hpp>
 
 int main() {
   // setenv("QT_QPA_PLATFORM", "xcb", 1);
-  cv::Mat image = cv::imread(
-      "../../DIP3E_Original_Images_CH01/Fig0101(1921 digital image).tif",
-      cv::IMREAD_GRAYSCALE);
+  ProcessadorImagem *processor = new ProcessadorImagem(
+      "/home/laio/Documents/faculdade/pdi/Vicente Laio Sousa Freitas - "
+      "Fig0224(galaxy_pair_original).tif");
 
-  if (image.empty()) {
-    std::cout << "erro ai caba" << std::endl;
-    return -1;
-  }
-  std::cout << "rows: " << image.rows << "\n"
-            << "colluns: " << image.cols << std::endl;
-  // pixel a pixel
-  // for (int i = 0; i < image.rows; i++) {
-  //   uchar *pixel = image.ptr<uchar>(i);
-  //   for (int j = 0; j < image.cols; j++) {
-  //     pixel[j] = 255 - pixel[j];
-  //   }
-  // }
-  cv::Mat image_neg;
-  cv::Mat image_concat;
-  cv::bitwise_not(image, image_neg);
-  // cv::Mat negativo = 255 - image;
+  // processor->negative();
+  // processor->simpleScale(5, 3);
+  // cv::Mat image_scale = processor->getImage();
 
+  // processor->scale(5, 3);
+  processor->rotation(20);
   cv::namedWindow("Minha janela", cv::WINDOW_NORMAL);
   cv::namedWindow("Segunda janela", cv::WINDOW_NORMAL);
-  cv::hconcat(image, image_neg, image_concat);
+  // cv::namedWindow("Segunda janela", cv::WINDOW_NORMAL); cv::hconcat(image,
+  // image_neg, image_concat); cv::moveWindow("Minha janela", 100, 100);
+  // cv::moveWindow("Segunda janela", 100 + image.cols, 100);
+  // cv::resizeWindow("Minha janela", 200, 150);
+  // cv::resizeWindow("Segunda janela", 200, 150);
+  cv::imshow("Minha janela", processor->getImage());
 
-  cv::moveWindow("Minha janela", 100, 100);
-  cv::moveWindow("Segunda janela", 100 + image.cols, 100);
-  cv::resizeWindow("Minha janela", 200, 150);
-  cv::resizeWindow("Segunda janela", 200, 150);
-  cv::imshow("Minha janela", image);
-  cv::imshow("Segunda janela", image_neg);
+  cv::imshow("Segunda janela", processor->image);
   while (cv::waitKey(30) != 'q')
     ;
   cv::destroyAllWindows();
+  delete processor;
   return 0;
 }
