@@ -9,15 +9,14 @@
 int main() {
   // setenv("QT_QPA_PLATFORM", "xcb", 1);
   ProcessadorImagem *processor = new ProcessadorImagem(
-      "/home/laio/Documents/faculdade/pdi/Vicente Laio Sousa Freitas - "
-      "Fig0224(galaxy_pair_original).tif");
+      "/home/laio/Documents/faculdade/pdi/DIP3E_Original_Images_CH01/"
+      "Fig0107(e)(cygnusloop-Xray).tif");
 
   // processor->negative();
   // processor->simpleScale(5, 3);
   // cv::Mat image_scale = processor->getImage();
+  processor->medianFilter(3);
 
-  // processor->scale(5, 3);
-  processor->rotation(20);
   cv::namedWindow("Minha janela", cv::WINDOW_NORMAL);
   cv::namedWindow("Segunda janela", cv::WINDOW_NORMAL);
   // cv::namedWindow("Segunda janela", cv::WINDOW_NORMAL); cv::hconcat(image,
@@ -28,6 +27,7 @@ int main() {
   cv::imshow("Minha janela", processor->getImage());
 
   cv::imshow("Segunda janela", processor->image);
+
   while (cv::waitKey(30) != 'q')
     ;
   cv::destroyAllWindows();

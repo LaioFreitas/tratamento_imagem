@@ -1,8 +1,9 @@
 #include <cmath>
 #include <iostream>
-#include <opencv2/core.hpp>
+// #include <opencv2/core.hpp>
 #include <opencv2/core/hal/interface.h>
 #include <opencv2/core/types.hpp>
+#include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <processadorImagem.hpp>
 
@@ -149,6 +150,7 @@ void ProcessadorImagem::scale(int sx, int sy) {
   for (int i = 0; i < image_proc.rows; i++) {
     uchar *pixel_proc = image_proc.ptr<uchar>(i);
     for (int j = 0; j < image_proc.cols; j++) {
+
       float y = i / static_cast<float>(sy);
       float x = j / static_cast<float>(sx);
 
@@ -213,15 +215,94 @@ void ProcessadorImagem::rotation(int angle) {
   for (int i = 0; i < image_proc.rows; i++) {
     uchar *pixel_proc = image_proc.ptr<uchar>(i);
     for (int j = 0; j < image_proc.cols; j++) {
+
       float x = (j + xmin) * cos(-ang) - (i + ymin) * sin(-ang);
       float y = (j + xmin) * sin(-ang) + (i + ymin) * cos(-ang);
       int xaux = static_cast<int>(x);
       int yaux = static_cast<int>(y);
+
       if (xaux >= 0 && yaux >= 0 && xaux < image.cols && yaux < image.rows) {
         pixel_proc[j] = image.ptr<uchar>(yaux)[xaux];
       } else {
         pixel_proc[j] = 0;
       }
+    }
+  }
+}
+
+void ProcessadorImagem::mediaFilter(std::vector<int> kernel) {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
+  int a = (kernel.at(0) - 1) / 2;
+  int b = (kernel.at(1) - 1) / 2;
+  int m = kernel.at(0);
+  int n = kernel.at(1);
+  image_proc = image.clone();
+  int radius = m / 2;
+
+  cv::Mat imageAux(image.rows + a * 2, image.cols + b * 2, CV_32FC1,
+                   cv::Scalar(0));
+
+  for (int i = 0; i < image.rows; i++) {
+    for (int j = 0; j < image.cols; j++) {
+      imageAux.ptr<float>(i + a)[j + b] =
+          static_cast<float>(image.ptr<uchar>(i)[j]) / 255;
+    }
+  }
+
+  for (int i = 0; i < image.rows; i++) {
+    for (int j = 0; j < image.cols; j++) {
+      float sumPixel = 0;
+
+      for (int dy = -m / 2; dy <= radius; dy++) {
+        for (int dx = -n / 2; dx <= radius; dx++) {
+          sumPixel += imageAux.ptr<float>(i + radius + dy)[j + radius + dx];
+        }
+      }
+      image_proc.ptr<uchar>(i)[j] =
+          static_cast<uchar>((sumPixel / (m * n)) * 255);
+    }
+  }
+}
+
+void ProcessadorImagem::medianFilter(const int kernel) {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
+
+  int a = kernel - 1 / 2;
+  int radius = kernel / 2;
+  image_proc = image.clone();
+
+  cv::Mat imageAux(image.rows + a * 2, image.cols + a * 2, CV_32FC1,
+                   cv::Scalar(0));
+
+  for (int i = 0; i < image.rows; i++) {
+    for (int j = 0; j < image.cols; j++) {
+      imageAux.ptr<float>(i + a)[j + a] =
+          static_cast<float>(image.ptr<uchar>(i)[j]) / 255;
+    }
+  }
+  cv::namedWindow("teste", cv::WINDOW_NORMAL);
+  cv::imshow("teste", imageAux);
+
+  for (int i = 0; i < image.rows; i++) {
+    for (int j = 0; j < image.cols; j++) {
+      std::vector<float> filter;
+
+      for (int dy = -radius; dy <= radius; dy++) {
+        for (int dx = -radius; dx <= radius; dx++) {
+          filter.push_back(
+              imageAux.at<float>(i + radius + dy, j + radius + dx));
+        }
+      }
+      std::sort(filter.begin(), filter.end());
+
+      image_proc.ptr<uchar>(i)[j] =
+          static_cast<uchar>(filter.at((kernel * kernel) / 2) * 255);
     }
   }
 }

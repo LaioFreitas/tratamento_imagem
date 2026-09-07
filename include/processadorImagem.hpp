@@ -33,6 +33,8 @@ public:
   void simpleScale(int sx, int sy);
   void scale(int sx, int sy);
   void rotation(int angle);
+  void mediaFilter(const std::vector<int> kernel);
+  void medianFilter(const int kernel);
   // TODO: definir os outros metodos necessarios
 
   bool isEmpty() const;
