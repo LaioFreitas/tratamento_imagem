@@ -4,18 +4,21 @@
 // #include <opencv2/highgui.hpp>
 // #include <opencv2/imgcodecs.hpp>
 // #include <opencv2/opencv.hpp>
+#include <opencv2/core/types.hpp>
 #include <processadorImagem.hpp>
 
 int main() {
   // setenv("QT_QPA_PLATFORM", "xcb", 1);
   ProcessadorImagem *processor = new ProcessadorImagem(
       "/home/laio/Documents/faculdade/pdi/DIP3E_Original_Images_CH01/"
-      "Fig0107(e)(cygnusloop-Xray).tif");
+      "Fig0109(c)(microporcessor).tif");
 
   // processor->negative();
   // processor->simpleScale(5, 3);
   // cv::Mat image_scale = processor->getImage();
-  processor->medianFilter(3);
+
+  processor->rotation(45, cv::Point2d(processor->image.rows / 2.f,
+                                      processor->image.cols / 2.f));
 
   cv::namedWindow("Minha janela", cv::WINDOW_NORMAL);
   cv::namedWindow("Segunda janela", cv::WINDOW_NORMAL);

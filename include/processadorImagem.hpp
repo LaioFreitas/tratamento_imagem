@@ -1,6 +1,7 @@
 #ifndef PROCESSADOR_IMAGEM_H
 #define PROCESSADOR_IMAGEM_H
 
+#include <opencv2/core/types.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 #include <string>
@@ -33,6 +34,7 @@ public:
   void simpleScale(int sx, int sy);
   void scale(int sx, int sy);
   void rotation(int angle);
+  void rotation(int angle, cv::Point2d rotationPoint = cv::Point2d(0, 0));
   void mediaFilter(const std::vector<int> kernel);
   void medianFilter(const int kernel);
   // TODO: definir os outros metodos necessarios
