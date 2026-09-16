@@ -268,21 +268,21 @@ void ProcessadorImagem::rotation(int angle, cv::Point2d rotationPoint) {
   for (int i = 0; i < pointsMat.rows; i++) {
     float pointx = pointsMat.ptr<float>(i)[0];
     float pointy = pointsMat.ptr<float>(i)[1];
-    pointsMat.ptr<float>(i)[0] = pointx - rotationPoint.x;
-    pointsMat.ptr<float>(i)[1] = pointy - rotationPoint.y;
+    pointsMat.ptr<float>(i)[0] -= rotationPoint.x;
+    pointsMat.ptr<float>(i)[1] -= rotationPoint.y;
     std::cout << '(' << pointsMat.ptr<float>(i)[0] << ','
               << pointsMat.ptr<float>(i)[1] << ')' << std::endl;
   }
+  std::cout << "cordenadas novas da imagem rodada" << std::endl;
 
   cv::Mat pointsRotated = pointsMat * rotationMatrix;
   for (int i = 0; i < pointsMat.rows; i++) {
-    float pointx = pointsRotated.ptr<float>(i)[0];
-    float pointy = pointsRotated.ptr<float>(i)[1];
-    pointsRotated.ptr<float>(i)[0] = pointx + rotationPoint.x;
-    pointsRotated.ptr<float>(i)[1] = pointy + rotationPoint.y;
+    pointsRotated.ptr<float>(i)[0] += rotationPoint.x;
+    pointsRotated.ptr<float>(i)[1] += rotationPoint.y;
     std::cout << '(' << pointsRotated.ptr<float>(i)[0] << ','
               << pointsRotated.ptr<float>(i)[1] << ')' << std::endl;
   }
+
   double xmax, xmin, ymax, ymin;
   cv::minMaxLoc(pointsRotated.col(1), &xmin, &xmax);
   cv::minMaxLoc(pointsRotated.col(0), &ymin, &ymax);
@@ -295,9 +295,9 @@ void ProcessadorImagem::rotation(int angle, cv::Point2d rotationPoint) {
     uchar *pixel_proc = image_proc.ptr<uchar>(i);
     for (int j = 0; j < image_proc.cols; j++) {
 
-      float x = (j + xmin - rotationPoint.x) * cos(-ang) +
+      float x = (j + xmin - rotationPoint.x) * cos(-ang) -
                 (i + ymin - rotationPoint.y) * sin(-ang);
-      float y = (j + xmin - rotationPoint.x) * sin(-ang) -
+      float y = (j + xmin - rotationPoint.x) * sin(-ang) +
                 (i + ymin - rotationPoint.y) * cos(-ang);
       int xaux = static_cast<int>(std::round(x + rotationPoint.x));
       int yaux = static_cast<int>(std::round(y + rotationPoint.y));
@@ -384,6 +384,37 @@ void ProcessadorImagem::medianFilter(const int kernel) {
 
       image_proc.ptr<uchar>(i)[j] =
           static_cast<uchar>(filter.at((kernel * kernel) / 2) * 255);
+    }
+  }
+}
+
+void ProcessadorImagem::histogramEqualization() {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
+
+  std::vector<uchar> histogramNomalized(256, 0);
+
+  for (int i = 0; i < image.rows; i++) {
+    for (int j = 0; j < image.cols; j++) {
+      histogramNomalized.at(image.ptr<uchar>(i)[j]) +=
+          1 / (image.rows * image.cols);
+    }
+  }
+
+  std::vector<uchar> tranformationIntensity(256, 0);
+
+  for (int i = 0; i < histogramNomalized.size(); i++) {
+    for (int j = 0; j < i; j++) {
+      tranformationIntensity.at(i) += histogramNomalized.at(j);
+    }
+    tranformationIntensity.at(i) =
+        std::round((256 - 1) * tranformationIntensity.at(i));
+  }
+
+  for (int i = 0; i < image.rows; i++) {
+    for (int j = 0; j < image.cols; j++) {
     }
   }
 }

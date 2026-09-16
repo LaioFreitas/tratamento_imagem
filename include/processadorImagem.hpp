@@ -37,7 +37,10 @@ public:
   void rotation(int angle, cv::Point2d rotationPoint = cv::Point2d(0, 0));
   void mediaFilter(const std::vector<int> kernel);
   void medianFilter(const int kernel);
+  void histogramEqualization();
   // TODO: definir os outros metodos necessarios
+  // TODO: algoritimo da transformada de furrie
+  // TODO: algoritimo da transformada rapida de furrie (FFT)
 
   bool isEmpty() const;
   cv::Mat getImage() const;
