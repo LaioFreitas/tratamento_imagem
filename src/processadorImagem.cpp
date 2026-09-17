@@ -394,16 +394,22 @@ void ProcessadorImagem::histogramEqualization() {
     return;
   }
 
-  std::vector<uchar> histogramNomalized(256, 0);
+  std::vector<double> histogramNomalized(256, 0);
+  image_proc = image.clone();
 
   for (int i = 0; i < image.rows; i++) {
+    int index;
     for (int j = 0; j < image.cols; j++) {
-      histogramNomalized.at(image.ptr<uchar>(i)[j]) +=
-          1 / (image.rows * image.cols);
+      int pixel = image.ptr<uchar>(i)[j];
+      index = image.ptr<uchar>(i)[j];
+      histogramNomalized.at(index) +=
+          1 / static_cast<double>(image.rows * image.cols);
     }
+    // histogramNomalized.at(index) /=
+    //     static_cast<double>(image.rows * image.cols);
   }
 
-  std::vector<uchar> tranformationIntensity(256, 0);
+  std::vector<double> tranformationIntensity(256, 0);
 
   for (int i = 0; i < histogramNomalized.size(); i++) {
     for (int j = 0; j < i; j++) {
@@ -415,6 +421,8 @@ void ProcessadorImagem::histogramEqualization() {
 
   for (int i = 0; i < image.rows; i++) {
     for (int j = 0; j < image.cols; j++) {
+      image_proc.ptr<uchar>(i)[j] =
+          tranformationIntensity.at(image.ptr<uchar>(i)[j]);
     }
   }
 }

@@ -17,8 +17,7 @@ int main() {
   // processor->simpleScale(5, 3);
   // cv::Mat image_scale = processor->getImage();
 
-  processor->rotation(45, cv::Point2d(processor->image.rows / 2.f,
-                                      processor->image.cols / 2.f));
+  processor->histogramEqualization();
 
   cv::namedWindow("Minha janela", cv::WINDOW_NORMAL);
   cv::namedWindow("Segunda janela", cv::WINDOW_NORMAL);
