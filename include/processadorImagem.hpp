@@ -16,6 +16,7 @@ private:
 
   uchar lastBrightness;
   std::vector<uchar> LUTBrightness;
+  std::vector<double> calcHistogram(cv::Mat &imageHis);
 
 public:
   cv::Mat image;
@@ -37,7 +38,9 @@ public:
   void rotation(int angle, cv::Point2d rotationPoint = cv::Point2d(0, 0));
   void mediaFilter(const std::vector<int> kernel);
   void medianFilter(const int kernel);
+  void filter(cv::Mat filter);
   void histogramEqualization();
+  void laplacianFilter();
   // TODO: definir os outros metodos necessarios
   // TODO: algoritimo da transformada de furrie
   // TODO: algoritimo da transformada rapida de furrie (FFT)

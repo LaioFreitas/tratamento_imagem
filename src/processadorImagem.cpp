@@ -2,7 +2,8 @@
 #include <iostream>
 // #include <opencv2/core.hpp>
 #include <opencv2/core/hal/interface.h>
-#include <opencv2/core/types.hpp>
+#include <opencv2/core/mat.hpp>
+// #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <ostream>
@@ -311,6 +312,45 @@ void ProcessadorImagem::rotation(int angle, cv::Point2d rotationPoint) {
   }
 }
 
+void ProcessadorImagem::filter(cv::Mat filter) {
+  if (isEmpty()) {
+    std::cout << "ERROR: nao ha imagem carregada" << std::endl;
+    return;
+  }
+
+  int m = filter.rows;
+  int n = filter.cols;
+
+  int a = m - 1 / 2;
+  int b = n - 1 / 2;
+  image_proc = image.clone();
+  int radius = m / 2;
+
+  cv::Mat imageAux(image.rows + a * 2, image.cols + b * 2, CV_32FC1,
+                   cv::Scalar(0));
+
+  for (int i = 0; i < image.rows; i++) {
+    for (int j = 0; j < image.cols; j++) {
+      imageAux.ptr<float>(i + a)[j + b] =
+          static_cast<float>(image.ptr<uchar>(i)[j]) / 255;
+    }
+  }
+
+  for (int i = 0; i < image.rows; i++) {
+    for (int j = 0; j < image.cols; j++) {
+      float sumPixels = 0;
+
+      for (int dy = -m / 2; dy <= radius; dy++) {
+        for (int dx = -n / 2; dx <= radius; dx++) {
+          sumPixels += imageAux.ptr<float>(i + radius + dy)[j + radius + dx] *
+                       filter.ptr<float>(dy)[dx];
+        }
+      }
+      image_proc.ptr<float>(i)[j] = static_cast<uchar>(sumPixels * 255);
+    }
+  }
+}
+
 void ProcessadorImagem::mediaFilter(std::vector<int> kernel) {
   if (isEmpty()) {
     std::cout << "ERROR: nao ha imagem carregada" << std::endl;
@@ -394,20 +434,8 @@ void ProcessadorImagem::histogramEqualization() {
     return;
   }
 
-  std::vector<double> histogramNomalized(256, 0);
+  std::vector<double> histogramNomalized = calcHistogram(image);
   image_proc = image.clone();
-
-  for (int i = 0; i < image.rows; i++) {
-    int index;
-    for (int j = 0; j < image.cols; j++) {
-      int pixel = image.ptr<uchar>(i)[j];
-      index = image.ptr<uchar>(i)[j];
-      histogramNomalized.at(index) +=
-          1 / static_cast<double>(image.rows * image.cols);
-    }
-    // histogramNomalized.at(index) /=
-    //     static_cast<double>(image.rows * image.cols);
-  }
 
   std::vector<double> tranformationIntensity(256, 0);
 
@@ -426,6 +454,20 @@ void ProcessadorImagem::histogramEqualization() {
     }
   }
 }
-
+std::vector<double> ProcessadorImagem::calcHistogram(cv::Mat &imageHist) {
+  std::vector<double> histogramNomalized(256, 0);
+  for (int i = 0; i < image.rows; i++) {
+    int index;
+    for (int j = 0; j < image.cols; j++) {
+      int pixel = image.ptr<uchar>(i)[j];
+      index = image.ptr<uchar>(i)[j];
+      histogramNomalized.at(index) +=
+          1 / static_cast<double>(image.rows * image.cols);
+    }
+    // histogramNomalized.at(index) /=
+    //     static_cast<double>(image.rows * image.cols);
+  }
+  return histogramNomalized;
+}
 cv::Mat ProcessadorImagem::getImage() const { return image_proc; }
 bool ProcessadorImagem::isEmpty() const { return image.empty(); }
